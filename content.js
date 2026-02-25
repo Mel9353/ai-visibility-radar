@@ -1,4 +1,4 @@
-const API_KEY = "YOUR_SERPAPI_KEY";
+const API_KEY = "4081d8d219ea1d128ff3ae494e6810fc0f472e116e3cecc5f3a0290f6db8a509";
 
 async function analyzeSERP() {
   const params = new URLSearchParams(window.location.search);
