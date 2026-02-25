@@ -2,18 +2,17 @@ function analyzePage() {
   const query = new URLSearchParams(window.location.search).get("q");
   if (!query) return;
 
-  const links = Array.from(document.querySelectorAll("a"));
-  const organicLinks = links
-    .map(a => a.href)
-    .filter(href => href && href.startsWith("http"));
-
+  const resultBlocks = document.querySelectorAll("div.g");
   let redditCount = 0;
   let youtubeCount = 0;
   let domains = new Set();
 
-  organicLinks.slice(0, 20).forEach(link => {
+  resultBlocks.forEach(block => {
+    const link = block.querySelector("a");
+    if (!link) return;
+
     try {
-      const hostname = new URL(link).hostname;
+      const hostname = new URL(link.href).hostname;
       domains.add(hostname);
 
       if (hostname.includes("reddit.com")) redditCount++;
@@ -23,7 +22,6 @@ function analyzePage() {
 
   const domainDiversity = domains.size;
 
-  // AI Overview detection (basic heuristic)
   const aiOverview = document.body.innerText.includes("AI Overview");
 
   const threatScore =
@@ -71,4 +69,6 @@ function createOverlay(info) {
   };
 }
 
-analyzePage();
+window.addEventListener("load", () => {
+  setTimeout(analyzePage, 1000);
+});
