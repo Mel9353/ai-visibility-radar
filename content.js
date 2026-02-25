@@ -1,55 +1,45 @@
-const API_KEY = "4081d8d219ea1d128ff3ae494e6810fc0f472e116e3cecc5f3a0290f6db8a509";
-
-async function analyzeSERP() {
-  const params = new URLSearchParams(window.location.search);
-  const query = params.get("q");
+function analyzePage() {
+  const query = new URLSearchParams(window.location.search).get("q");
   if (!query) return;
 
-  try {
-    const response = await fetch(
-      `https://serpapi.com/search.json?q=${query}&engine=google&api_key=${API_KEY}`
-    );
+  const links = Array.from(document.querySelectorAll("a"));
+  const organicLinks = links
+    .map(a => a.href)
+    .filter(href => href && href.startsWith("http"));
 
-    const data = await response.json();
+  let redditCount = 0;
+  let youtubeCount = 0;
+  let domains = new Set();
 
-    const aiOverview = !!data.ai_overview;
-    const organicResults = data.organic_results || [];
+  organicLinks.slice(0, 20).forEach(link => {
+    try {
+      const hostname = new URL(link).hostname;
+      domains.add(hostname);
 
-    let redditCount = 0;
-    let youtubeCount = 0;
-    let domains = new Set();
+      if (hostname.includes("reddit.com")) redditCount++;
+      if (hostname.includes("youtube.com")) youtubeCount++;
+    } catch (e) {}
+  });
 
-    organicResults.slice(0, 10).forEach(result => {
-      const link = result.link || "";
-      try {
-        const hostname = new URL(link).hostname;
-        domains.add(hostname);
+  const domainDiversity = domains.size;
 
-        if (hostname.includes("reddit.com")) redditCount++;
-        if (hostname.includes("youtube.com")) youtubeCount++;
-      } catch (e) {}
-    });
+  // AI Overview detection (basic heuristic)
+  const aiOverview = document.body.innerText.includes("AI Overview");
 
-    const domainDiversity = domains.size;
+  const threatScore =
+    (aiOverview ? 30 : 0) +
+    redditCount * 5 +
+    youtubeCount * 5 +
+    (domainDiversity < 5 ? 20 : 0);
 
-    const threatScore =
-      (aiOverview ? 30 : 0) +
-      redditCount * 5 +
-      youtubeCount * 5 +
-      (domainDiversity < 5 ? 20 : 0);
-
-    createOverlay({
-      query,
-      aiOverview,
-      redditCount,
-      youtubeCount,
-      domainDiversity,
-      threatScore
-    });
-
-  } catch (error) {
-    console.error("Radar error:", error);
-  }
+  createOverlay({
+    query,
+    aiOverview,
+    redditCount,
+    youtubeCount,
+    domainDiversity,
+    threatScore
+  });
 }
 
 function createOverlay(info) {
@@ -66,8 +56,8 @@ function createOverlay(info) {
     <div class="radar-body">
       <p><strong>Query:</strong> ${info.query}</p>
       <p><strong>AI Overview:</strong> ${info.aiOverview ? "Yes" : "No"}</p>
-      <p><strong>Reddit in Top 10:</strong> ${info.redditCount}</p>
-      <p><strong>YouTube in Top 10:</strong> ${info.youtubeCount}</p>
+      <p><strong>Reddit Links:</strong> ${info.redditCount}</p>
+      <p><strong>YouTube Links:</strong> ${info.youtubeCount}</p>
       <p><strong>Domain Diversity:</strong> ${info.domainDiversity}</p>
       <p><strong>Threat Score:</strong> ${info.threatScore}/100</p>
     </div>
@@ -81,4 +71,4 @@ function createOverlay(info) {
   };
 }
 
-analyzeSERP();
+analyzePage();
